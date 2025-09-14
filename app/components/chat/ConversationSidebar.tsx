@@ -1,0 +1,150 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { PlusCircle, Search } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+
+interface ConversationSidebarProps {
+  isOpen: boolean;
+  conversations: any[];
+  activeConversationId: string | null;
+  isLoading?: boolean;
+  onRefresh?: () => void;
+}
+
+export default function ConversationSidebar({ 
+  isOpen, 
+  conversations, 
+  activeConversationId,
+  isLoading = false,
+  onRefresh
+}: ConversationSidebarProps) {
+  const t = useTranslations('chat');
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleNewConversation = async () => {
+    try {
+      // Create a new conversation via API
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: 'Nueva conversación' }),
+      });
+      
+      if (response.ok) {
+        const newConversation = await response.json();
+        // Refresh the conversations list
+        if (onRefresh) {
+          onRefresh();
+        }
+        // Navigate to the new conversation
+        const locale = window.location.pathname.split('/')[1];
+        router.push(`/${locale}/chat/${newConversation.id}`);
+      } else {
+        console.error('Failed to create conversation');
+        // Fallback to the old method
+        const newId = uuidv4();
+        const locale = window.location.pathname.split('/')[1];
+        router.push(`/${locale}/chat/${newId}`);
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      // Fallback to the old method
+      const newId = uuidv4();
+      const locale = window.location.pathname.split('/')[1];
+      router.push(`/${locale}/chat/${newId}`);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="w-72 h-full bg-white/90 dark:bg-black/90 backdrop-blur-xl border-r border-white/20 dark:border-gray-700/50 flex flex-col shadow-2xl shadow-black/10 dark:shadow-black/30">
+      <div className="p-6">
+        <button
+          data-testid="new-conversation"
+          onClick={handleNewConversation}
+          className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-gray-900 dark:text-purple-100 py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 font-medium"
+        >
+          <PlusCircle size={20} />
+          {t('interface.newConversation')}
+        </button>
+      </div>
+      
+      <div className="px-6 pb-4">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-900 dark:text-purple-300 group-focus-within:text-purple-900 dark:group-focus-within:text-purple-200 transition-all duration-300 drop-shadow-lg group-focus-within:scale-125 group-focus-within:drop-shadow-xl" size={20} />
+          <input
+            data-testid="sidebar-search"
+            type="text"
+            placeholder={t('sidebar.search')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 border border-purple-200/50 dark:border-purple-600/50 rounded-xl bg-purple-50/50 dark:bg-gray-700/50 text-gray-900 dark:text-purple-100 placeholder-gray-600 dark:placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 backdrop-blur-sm"
+          />
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <h2 className="px-3 py-2 text-xs font-semibold text-purple-500 dark:text-purple-400 uppercase tracking-wider mb-3">
+          {t('sidebar.conversations')}
+        </h2>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="relative">
+              <div className="w-8 h-8 border-4 border-purple-200 dark:border-purple-800 rounded-full animate-spin"></div>
+              <div className="absolute top-0 left-0 w-8 h-8 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
+            </div>
+          </div>
+        ) : conversations.length === 0 ? (
+          <div className="text-center py-8 px-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-violet-200 to-purple-300 dark:from-violet-800 dark:to-purple-900 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
+              <Search className="text-gray-900 dark:text-purple-200 drop-shadow-xl" size={28} />
+            </div>
+            <p className="text-sm text-purple-500 dark:text-purple-400 leading-relaxed">
+              {t('sidebar.noConversations')}
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-1">
+            {conversations.map((conversation, index) => (
+              <li key={conversation.id} className="animate-fadeIn" style={{ animationDelay: `${index * 50}ms` }}>
+                <button
+                  onClick={() => {
+                    const locale = window.location.pathname.split('/')[1];
+                    router.push(`/${locale}/chat/${conversation.id}`);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-200 group relative overflow-hidden ${
+                    conversation.id === activeConversationId 
+                      ? 'bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 text-purple-700 dark:text-purple-300 shadow-lg shadow-purple-500/10 border border-purple-200/50 dark:border-purple-700/50' 
+                      : 'hover:bg-purple-50/80 dark:hover:bg-gray-700/50 text-gray-700 dark:text-purple-300 hover:shadow-md hover:shadow-black/5'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                      conversation.id === activeConversationId
+                        ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
+                        : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-400 dark:group-hover:bg-gray-500'
+                    }`}></div>
+                    <span className="truncate font-medium">
+                      {conversation.title || 'Untitled conversation'}
+                    </span>
+                  </div>
+                  {conversation.id === activeConversationId && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-violet-500/5 rounded-lg"></div>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
