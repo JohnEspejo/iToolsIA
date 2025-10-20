@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { Globe } from 'lucide-react';
+import { useDropdown } from '../contexts/DropdownContext';
 
 interface Language {
   code: string;
@@ -14,7 +15,9 @@ export default function LanguageSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
-  const [isOpen, setIsOpen] = useState(false);
+  const { openDropdown, setOpenDropdown } = useDropdown();
+
+  const isOpen = openDropdown === 'language';
 
   const languages: Language[] = [
     { code: 'es-ES', name: 'Español (España)' },
@@ -22,25 +25,46 @@ export default function LanguageSwitcher() {
     { code: 'en-US', name: 'English (US)' },
   ];
 
+  const toggleLanguageDropdown = () => {
+    setOpenDropdown(isOpen ? null : 'language');
+  };
+
   const handleLanguageChange = (languageCode: string) => {
-    // Get the path without the locale prefix
-    const pathWithoutLocale = pathname.replace(`/${locale}`, '');
+    // Ensure we have a valid pathname
+    const currentPath = pathname || '/';
     
-    // Navigate to the same path but with the new locale
-    router.push(`/${languageCode}${pathWithoutLocale}`);
-    setIsOpen(false);
+    // Extract the path without the locale prefix
+    let pathWithoutLocale = currentPath;
+    
+    // Remove the current locale prefix if it exists
+    if (currentPath.startsWith(`/${locale}/`)) {
+      pathWithoutLocale = currentPath.substring(`/${locale}`.length);
+    } else if (currentPath === `/${locale}`) {
+      pathWithoutLocale = '/';
+    }
+    
+    // Construct the new path with the target locale
+    let newPath;
+    if (pathWithoutLocale === '/' || pathWithoutLocale === '') {
+      newPath = `/${languageCode}`;
+    } else {
+      newPath = `/${languageCode}${pathWithoutLocale}`;
+    }
+    
+    router.push(newPath);
+    setOpenDropdown(null);
   };
 
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleLanguageDropdown}
         className="p-2 rounded-md hover:bg-purple-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
         aria-label="Change language"
       >
         <Globe size={20} className="text-purple-600 dark:text-purple-300" />
         <span className="sr-only md:not-sr-only md:inline-block md:ml-1 text-gray-900 dark:text-purple-300">
-          {languages.find(lang => lang.code === locale)?.name.split(' ')[0]}
+          {languages.find(lang => lang.code === locale)?.name.split(' ')[0] || 'Language'}
         </span>
       </button>
       

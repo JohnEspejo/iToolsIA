@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { PlusCircle, Search } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import UserMenu from '../UserMenu';
 
 interface ConversationSidebarProps {
   isOpen: boolean;
@@ -144,6 +145,11 @@ export default function ConversationSidebar({
             ))}
           </ul>
         )}
+      </div>
+      
+      {/* User Menu at the bottom */}
+      <div className="p-4 border-t border-white/20 dark:border-gray-700/50">
+        <UserMenu />
       </div>
     </div>
   );

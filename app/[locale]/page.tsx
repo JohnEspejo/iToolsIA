@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-export default function Home() {
+export default function LocaleHome() {
   const router = useRouter();
   const { status } = useSession();
 
@@ -12,8 +12,8 @@ export default function Home() {
     if (status === 'loading') return;
 
     if (status === 'authenticated') {
-      // Redirect authenticated users to the default locale chat page
-      router.push('/es-ES/chat');
+      // Redirect authenticated users to the chat page
+      router.push('/chat');
     } else {
       // Redirect unauthenticated users to the login page
       router.push('/auth/login');

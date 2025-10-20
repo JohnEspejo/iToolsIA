@@ -4,6 +4,8 @@ import '../globals.css';
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { ThemeProvider } from '../components/ThemeProvider';
+import SessionProvider from '../components/SessionProvider';
+import { DropdownProvider } from '../contexts/DropdownContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -33,11 +35,15 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <ThemeProvider defaultTheme="system">
-            {children}
-          </ThemeProvider>
-        </NextIntlClientProvider>
+        <SessionProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <ThemeProvider defaultTheme="system">
+              <DropdownProvider>
+                {children}
+              </DropdownProvider>
+            </ThemeProvider>
+          </NextIntlClientProvider>
+        </SessionProvider>
       </body>
     </html>
   );

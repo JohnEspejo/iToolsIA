@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationStore } from '../route';
+import { conversationStore, saveConversations } from '../route';
 
 // GET /api/conversations/[id] - Get a specific conversation
 export async function GET(
@@ -51,6 +51,9 @@ export async function PUT(
     
     conversationStore.data[conversationIndex] = updatedConversation;
     
+    // Save to file
+    await saveConversations(conversationStore.data);
+    
     return NextResponse.json(updatedConversation);
   } catch (error) {
     console.error('Error updating conversation:', error);
@@ -77,6 +80,10 @@ export async function DELETE(
     }
     
     conversationStore.data.splice(conversationIndex, 1);
+    
+    // Save to file
+    await saveConversations(conversationStore.data);
+    
     // Note: In a real app, this would be handled by the database
     // For now, we'll just return success
     

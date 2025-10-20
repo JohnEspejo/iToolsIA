@@ -2,13 +2,18 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Paperclip, FileText, File } from 'lucide-react';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   createdAt: Date;
+  file?: {
+    name: string;
+    type: string;
+    url?: string;
+  };
 }
 
 interface Source {
@@ -32,6 +37,23 @@ export default function MessageList({
 }: MessageListProps) {
   const t = useTranslations('chat');
   const [showSources, setShowSources] = useState(false);
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType === 'application/pdf') {
+      return <FileText size={16} className="text-red-500" />;
+    } else if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      return <File size={16} className="text-blue-500" />;
+    }
+    return <Paperclip size={16} className="text-gray-500" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-transparent to-purple-50/30 dark:to-black/30">
@@ -60,14 +82,48 @@ export default function MessageList({
                 ? 'bg-gradient-to-br from-purple-600 to-violet-600 text-white shadow-xl shadow-purple-500/25' 
                 : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 shadow-xl shadow-black/10 dark:shadow-black/20'
             } p-3 rounded-xl max-w-xl relative overflow-hidden`}>
+              {/* File attachment */}
+              {message.file && (
+                <div className={`mb-2 p-2 rounded-lg ${
+                  message.role === 'user' 
+                    ? 'bg-purple-500/20' 
+                    : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    {getFileIcon(message.file.type)}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${
+                        message.role === 'user' ? 'text-white' : 'text-gray-800 dark:text-purple-200'
+                      }`}>
+                        {message.file.name}
+                      </p>
+                    </div>
+                    {message.file.url && (
+                      <a 
+                        href={message.file.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className={`p-1 rounded hover:bg-black/10 ${
+                          message.role === 'user' ? 'text-white' : 'text-gray-800 dark:text-purple-200'
+                        }`}
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {/* Message content */}
-              <div className={`whitespace-pre-wrap leading-normal text-sm ${
-                message.role === 'user' 
-                  ? 'text-white' 
-                  : 'text-gray-800 dark:text-purple-200'
-              }`}>
-                {message.content}
-              </div>
+              {message.content && (
+                <div className={`whitespace-pre-wrap leading-normal text-sm ${
+                  message.role === 'user' 
+                    ? 'text-white' 
+                    : 'text-gray-800 dark:text-purple-200'
+                }`}>
+                  {message.content}
+                </div>
+              )}
               
               {/* Decorative elements */}
               {message.role === 'assistant' && (

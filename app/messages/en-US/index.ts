@@ -12,7 +12,8 @@ export default {
     "cancel": "Cancel",
     "confirm": "Confirm",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "logout": "Logout"
   },
   "chat": {
     "interface": {
@@ -43,5 +44,38 @@ export default {
       "save": "Save",
       "cancel": "Cancel"
     }
+  },
+  "auth": {
+    "signInToAccount": "Sign in to your account",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "signIn": "Sign in",
+    "dontHaveAccount": "Don't have an account? Sign up",
+    "orContinueWith": "Or continue with",
+    "signInWithGoogle": "Sign in with Google",
+    "createAccount": "Create an account",
+    "fullName": "Full name",
+    "confirmPassword": "Confirm password",
+    "signUp": "Sign up",
+    "alreadyHaveAccount": "Already have an account? Sign in",
+    "signUpWithGoogle": "Sign up with Google",
+    "invalidCredentials": "Invalid credentials",
+    "loginError": "Error signing in",
+    "googleSignInError": "Error signing in with Google",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "registrationError": "Error registering user"
+  },
+  "settings": {
+    "title": "Settings",
+    "ragSettings": "RAG Settings",
+    "topK": "Number of sources (Top-K)",
+    "temperature": "Creativity",
+    "language": "Language",
+    "theme": "Theme",
+    "save": "Save",
+    "cancel": "Cancel",
+    "precise": "Precise",
+    "creative": "Creative",
+    "aiModel": "AI Model"
   }
 }

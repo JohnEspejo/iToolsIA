@@ -10,17 +10,13 @@ interface SettingsModalProps {
 }
 
 interface Settings {
-  temperature: number;
-  topK: number;
-  language: string;
+  aiModel: string;
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const t = useTranslations('settings');
   const [settings, setSettings] = useState<Settings>({
-    temperature: 0.7,
-    topK: 5,
-    language: 'es-ES',
+    aiModel: 'openai',
   });
 
   useEffect(() => {
@@ -28,7 +24,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const savedSettings = localStorage.getItem('chatSettings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings({
+          aiModel: parsedSettings.aiModel || 'openai',
+        });
       } catch (e) {
         console.error('Failed to parse saved settings:', e);
       }
@@ -60,58 +59,19 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
         
         <div className="p-4 space-y-4">
+          {/* AI Model Selection */}
           <div>
             <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
-              {t('temperature')}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={settings.temperature}
-              onChange={(e) => setSettings({ ...settings, temperature: parseFloat(e.target.value) })}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-purple-500 dark:text-purple-400">
-              <span>{t('precise')}</span>
-              <span>{settings.temperature.toFixed(1)}</span>
-              <span>{t('creative')}</span>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
-              {t('topK')}
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              step="1"
-              value={settings.topK}
-              onChange={(e) => setSettings({ ...settings, topK: parseInt(e.target.value) })}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-purple-500 dark:text-purple-400">
-              <span>1</span>
-              <span>{settings.topK}</span>
-              <span>10</span>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
-              {t('language')}
+              {t('aiModel')}
             </label>
             <select
-              value={settings.language}
-              onChange={(e) => setSettings({ ...settings, language: e.target.value })}
+              value={settings.aiModel}
+              onChange={(e) => setSettings({ aiModel: e.target.value })}
               className="w-full p-2 border border-purple-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-purple-100"
             >
-              <option value="es-ES">Español (España)</option>
-              <option value="es-CO">Español (Colombia)</option>
-              <option value="en-US">English (US)</option>
+              <option value="openai">OpenAI</option>
+              <option value="gemini">Gemini</option>
+              <option value="python">Python</option>
             </select>
           </div>
         </div>
