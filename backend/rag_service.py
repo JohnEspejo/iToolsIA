@@ -29,7 +29,7 @@ def build_chatbot():
             return jsonify({'error': 'No file found'}), 400
 
         file = request.files['file']
-        if file:
+        if file and file.filename:
             # Ensure pdf_files directory exists
             pdf_dir = 'pdf_files'
             if not os.path.exists(pdf_dir):

@@ -33,16 +33,28 @@ def get_documents(chatbot_id, question):
     client = chromadb.Client()
     collection = client.get_collection(chatbot_id)
     result = collection.query(query_texts=question, n_results=3, include=["metadatas", "documents"])
-    relevant_docs = []
-    index=0
-    for doc_id in result['ids'][0]:
-        relevant_docs.append(
-            Document(
-                doc_id=doc_id,
-                content=result['documents'][0][index],
-                metadata=result['metadatas'][0][index],
-            )
-        )
-        index +=1
-    return relevant_docs
     
+    # Check if result is valid and contains the expected data
+    if not result or 'ids' not in result or not result['ids']:
+        return []
+    
+    relevant_docs = []
+    # Ensure we have valid data before accessing
+    if result['ids'] and len(result['ids']) > 0:
+        index = 0
+        for doc_id in result['ids'][0]:
+            # Check bounds and data existence
+            if (result['documents'] and len(result['documents']) > 0 and 
+                len(result['documents'][0]) > index and
+                result['metadatas'] and len(result['metadatas']) > 0 and 
+                len(result['metadatas'][0]) > index):
+                
+                relevant_docs.append(
+                    Document(
+                        doc_id=doc_id,
+                        content=result['documents'][0][index],
+                        metadata=result['metadatas'][0][index],
+                    )
+                )
+            index += 1
+    return relevant_docs
