@@ -57,6 +57,34 @@ After setting up your Google OAuth credentials:
 3. Click on "Sign in with Google"
 4. You should be able to sign in with your Google account
 
+## Python RAG Service
+
+This project includes a Python-based Retrieval-Augmented Generation (RAG) service for document-based question answering.
+
+To set up and run the Python RAG service:
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Create a `.env` file with your OpenAI API key:
+   ```bash
+   OPEN_AI_API_KEY=your_openai_api_key_here
+   ```
+
+4. Run the service:
+   ```bash
+   python rag_service.py
+   ```
+
+The service will start on `http://localhost:5001`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -7,6 +7,8 @@ import MessageList from './MessageList';
 
 interface ChatAreaProps {
   conversationId: string | null;
+  onConversationCreated?: (id: string) => void;
+  onConversationUpdated?: () => void;
 }
 
 interface Message {
@@ -27,8 +29,13 @@ interface Source {
   snippet: string;
 }
 
-export default function ChatArea({ conversationId }: ChatAreaProps) {
+// Counter for generating temporary IDs
+let messageIdCounter = 0;
+const generateTempId = () => `temp-${++messageIdCounter}`;
+
+export default function ChatArea({ conversationId, onConversationCreated, onConversationUpdated }: ChatAreaProps) {
   const t = useTranslations('chat');
+  const [selectedModel, setSelectedModel] = useState('openai');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,22 +43,44 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
   const [sources, setSources] = useState<Source[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showUploadOptions, setShowUploadOptions] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('openai');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   // Load saved AI model from localStorage
   useEffect(() => {
-    const savedSettings = localStorage.getItem('chatSettings');
-    if (savedSettings) {
-      try {
-        const parsedSettings = JSON.parse(savedSettings);
-        setSelectedModel(parsedSettings.aiModel || 'openai');
-      } catch (e) {
-        console.error('Failed to parse saved settings:', e);
+    const loadSelectedModel = () => {
+      const savedSettings = localStorage.getItem('chatSettings');
+      if (savedSettings) {
+        try {
+          const parsedSettings = JSON.parse(savedSettings);
+          setSelectedModel(parsedSettings.aiModel || 'openai');
+        } catch (e) {
+          console.error('Failed to parse saved settings:', e);
+        }
       }
-    }
+    };
+
+    // Load the model initially
+    loadSelectedModel();
+
+    // Create a custom event handler to listen for model changes
+    const handleModelChange = () => {
+      loadSelectedModel();
+    };
+
+    // Listen for custom model change events
+    window.addEventListener('modelChange', handleModelChange);
+
+    // Cleanup listener
+    return () => {
+      window.removeEventListener('modelChange', handleModelChange);
+    };
   }, []);
+  
+  // Add logging to see when messages state changes
+  useEffect(() => {
+    // console.log('Messages state updated:', messages);
+  }, [messages]);
 
   // Load messages when conversationId changes
   useEffect(() => {
@@ -126,10 +155,39 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && !selectedFile) || isLoading || !conversationId) return;
+    if ((!input.trim() && !selectedFile) || isLoading) return;
+
+    // If there's no conversationId, create a new conversation first
+    let currentConversationId = conversationId;
+    if (!conversationId) {
+      try {
+        const response = await fetch('/api/conversations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ title: input.trim() || 'Nueva conversación' }),
+        });
+        
+        if (response.ok) {
+          const newConversation = await response.json();
+          currentConversationId = newConversation.id;
+          // Notify parent component that a new conversation was created
+          if (onConversationCreated) {
+            await onConversationCreated(newConversation.id);
+          }
+        } else {
+          console.error('Failed to create conversation');
+          return;
+        }
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        return;
+      }
+    }
 
     let userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateTempId(), // Use temporary ID
       role: 'user' as const,
       content: input,
       createdAt: new Date(),
@@ -147,15 +205,16 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
     }
 
     // Save user message to server
-    if (conversationId) {
+    if (currentConversationId) {
       try {
-        await fetch(`/api/conversations/${conversationId}/messages`, {
+        const response = await fetch(`/api/conversations/${currentConversationId}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(userMessage),
         });
+        // console.log('Save user message response:', response.status, response.statusText);
       } catch (error) {
         console.error('Failed to save user message:', error);
       }
@@ -172,10 +231,10 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
     try {
       // If we have a file, we need to upload it first
       let fileUrl = '';
-      if (selectedFile) {
+      if (selectedFile && currentConversationId) {
         const formData = new FormData();
         formData.append('file', selectedFile);
-        formData.append('conversationId', conversationId);
+        formData.append('conversationId', currentConversationId);
 
         const uploadResponse = await fetch('/api/chat/upload', {
           method: 'POST',
@@ -190,11 +249,31 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
         fileUrl = uploadResult.fileUrl;
         
         // Log successful file upload
-        console.log('File uploaded successfully:', uploadResult);
+        // console.log('File uploaded successfully:', uploadResult);
       }
 
       // Only send message to AI if there's text content
       if (input.trim()) {
+        // Show notification about the agent being used
+        const getModelName = (model: string) => {
+          switch (model) {
+            case 'openai':
+              return 'OpenAI';
+            case 'gemini':
+              return 'Gemini';
+            case 'python':
+              return 'Python RAG';
+            default:
+              return model;
+          }
+        };
+        
+        // Use the global toast notification system
+        const showToast = (window as any).showToast || (window as any).appToast;
+        if (typeof showToast === 'function') {
+          showToast(`Cambiaste al agente ${getModelName(selectedModel)}`, 'success');
+        }
+
         const response = await fetch('/api/chat/send', {
           method: 'POST',
           headers: {
@@ -202,7 +281,7 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
           },
           body: JSON.stringify({
             message: input,
-            conversationId,
+            conversationId: currentConversationId,
             fileUrl: fileUrl,
             fileName: selectedFile?.name,
             fileType: selectedFile?.type,
@@ -228,6 +307,8 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
         let done = false;
         let completeMessage = '';
         let messageAdded = false;
+        let lastUpdateTime = 0;
+        let isFirstMessage = messages.length === 0; // Check if this is the first message
 
         while (!done) {
           const { value, done: doneReading } = await reader.read();
@@ -244,7 +325,12 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
 
                   if (eventData.type === 'message') {
                     // Instead of appending, we replace the content to ensure we have the complete message
-                    setStreamingMessage(eventData.data.content);
+                    // Throttle updates to improve performance
+                    const now = Date.now();
+                    if (now - lastUpdateTime > 50) { // Update at most every 50ms
+                      setStreamingMessage(eventData.data.content);
+                      lastUpdateTime = now;
+                    }
                     // Also accumulate the complete message
                     completeMessage = eventData.data.content;
                   } else if (eventData.type === 'sources') {
@@ -256,28 +342,36 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
                   } else if (eventData.type === 'complete') {
                     // Message is complete, add it to the messages list
                     const assistantMessage = {
-                      id: Date.now().toString(),
+                      id: generateTempId(), // Use temporary ID
                       role: 'assistant' as const,
                       content: completeMessage,
                       createdAt: new Date(),
                     };
 
+                    console.log('Complete message:', completeMessage);
+
                     // Save assistant message to server
-                    if (conversationId) {
+                    if (currentConversationId) {
                       try {
-        await fetch(`/api/conversations/${conversationId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(assistantMessage),
-        });
-      } catch (error) {
-        console.error('Failed to save assistant message:', error);
-      }
+                        const response = await fetch(`/api/conversations/${currentConversationId}/messages`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify(assistantMessage),
+                        });
+                        // console.log('Save assistant message response:', response.status, response.statusText);
+                      } catch (error) {
+                        console.error('Failed to save assistant message:', error);
+                      }
                     }
 
-                    setMessages((prev) => [...prev, assistantMessage]);
+                    setMessages((prev) => {
+                      const newMessages = [...prev, assistantMessage];
+                      // console.log('Adding assistant message:', assistantMessage);
+                      // console.log('Updated messages:', newMessages);
+                      return newMessages;
+                    });
                     setStreamingMessage('');
                     // Set a flag to prevent the fallback code from adding the message again
                     messageAdded = true;
@@ -295,16 +389,16 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
         // Only add if not already added by the 'complete' event handler
         if (completeMessage && streamingMessage === '' && !messageAdded) {
           const assistantMessage = {
-            id: Date.now().toString(),
+            id: generateTempId(), // Use temporary ID
             role: 'assistant' as const,
             content: completeMessage,
             createdAt: new Date(),
           };
 
           // Save assistant message to server
-          if (conversationId) {
+          if (currentConversationId) {
             try {
-              await fetch(`/api/conversations/${conversationId}/messages`, {
+              await fetch(`/api/conversations/${currentConversationId}/messages`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -318,20 +412,24 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
 
           setMessages((prev) => [...prev, assistantMessage]);
         }
-        setIsLoading(false);
+
+        // If this was the first message, notify parent to refresh conversations to update the title
+        if (isFirstMessage && onConversationUpdated) {
+          onConversationUpdated();
+        }
       } else {
         // If only a file was uploaded without text, add a simple confirmation message
         const assistantMessage = {
-          id: Date.now().toString(),
+          id: generateTempId(), // Use temporary ID
           role: 'assistant' as const,
           content: 'Archivo recibido y procesado correctamente.',
           createdAt: new Date(),
         };
 
         // Save assistant message to server
-        if (conversationId) {
+        if (currentConversationId) {
           try {
-            await fetch(`/api/conversations/${conversationId}/messages`, {
+            await fetch(`/api/conversations/${currentConversationId}/messages`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -344,22 +442,21 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
         }
 
         setMessages((prev) => [...prev, assistantMessage]);
-        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error sending message:', error);
       // Add error message to chat
       const errorMessage = {
-        id: Date.now().toString(),
+        id: generateTempId(), // Use temporary ID
         role: 'assistant' as const,
         content: 'Lo sentimos, ocurrió un error al procesar su solicitud. Por favor, inténtelo de nuevo.',
         createdAt: new Date(),
       };
 
       // Save error message to server
-      if (conversationId) {
+      if (currentConversationId) {
         try {
-          await fetch(`/api/conversations/${conversationId}/messages`, {
+          await fetch(`/api/conversations/${currentConversationId}/messages`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -372,7 +469,6 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
       }
 
       setMessages((prev) => [...prev, errorMessage]);
-      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -405,8 +501,7 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
             </div>
             <button
               onClick={removeFile}
-              className="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-100"
-            >
+              className="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-100">
               ×
             </button>
           </div>
@@ -418,15 +513,13 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
             <div className="absolute bottom-full right-0 mb-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-purple-200 dark:border-gray-700 py-2 z-20">
               <button
                 onClick={triggerFileInput}
-                className="flex items-center w-full px-4 py-3 text-left hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors duration-200"
-              >
+                className="flex items-center w-full px-4 py-3 text-left hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors duration-200">
                 <HardDrive className="text-purple-600 dark:text-purple-300 mr-3" size={20} />
                 <span className="text-gray-800 dark:text-purple-200">Subir desde archivos</span>
               </button>
               <button
                 onClick={handleDriveUpload}
-                className="flex items-center w-full px-4 py-3 text-left hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors duration-200"
-              >
+                className="flex items-center w-full px-4 py-3 text-left hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors duration-200">
                 <Cloud className="text-purple-600 dark:text-purple-300 mr-3" size={20} />
                 <span className="text-gray-800 dark:text-purple-200">Subir desde Drive</span>
               </button>
@@ -468,8 +561,7 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
             type="button"
             onClick={() => setShowUploadOptions(!showUploadOptions)}
             className="p-4 bg-white dark:bg-gray-800 border border-purple-200 dark:border-gray-600 rounded-2xl text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10 flex items-center justify-center min-w-[56px] h-14"
-            aria-label="Upload file"
-          >
+            aria-label="Upload file">
             <Paperclip size={20} />
           </button>
           
@@ -477,8 +569,7 @@ export default function ChatArea({ conversationId }: ChatAreaProps) {
             type="submit"
             data-testid="send-button"
             disabled={(!input.trim() && !selectedFile) || isLoading}
-            className="p-4 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-600 dark:disabled:to-gray-700 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:scale-100 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 disabled:shadow-none flex items-center justify-center min-w-[56px] h-14"
-          >
+            className="p-4 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-600 dark:disabled:to-gray-700 text-white rounded-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:scale-100 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 disabled:shadow-none flex items-center justify-center min-w-[56px] h-14">
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (

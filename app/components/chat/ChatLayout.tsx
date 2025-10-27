@@ -71,7 +71,10 @@ export default function ChatLayout({ conversationId }: ChatLayoutProps) {
         />
         <div className="flex-1 overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/30 to-transparent dark:via-black/30 pointer-events-none"></div>
-          <ChatArea conversationId={conversationId} />
+          <ChatArea 
+            conversationId={conversationId} 
+            onConversationUpdated={refreshConversations} // Pass the refresh function
+          />
         </div>
       </div>
     </div>

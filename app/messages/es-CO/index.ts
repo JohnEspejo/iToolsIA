@@ -35,20 +35,18 @@ export default {
       "newChat": "Nuevo chat",
       "noConversations": "No hay conversaciones aún",
       "deleteConfirm": "¿Estás seguro de que quieres eliminar esta conversación?"
+    },
+    "settings": {
+      "title": "Configuración",
+      "ragSettings": "Configuración de RAG",
+      "topK": "Top K",
+      "temperature": "Temperatura",
+      "language": "Idioma",
+      "theme": "Tema",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "aiModel": "Modelo de IA"
     }
-  },
-  "settings": {
-    "title": "Configuración",
-    "ragSettings": "Configuración de RAG",
-    "topK": "Top K",
-    "temperature": "Temperatura",
-    "precise": "Preciso",
-    "creative": "Creativo",
-    "language": "Idioma",
-    "theme": "Tema",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "aiModel": "Modelo de IA"
   },
   "auth": {
     "signInToAccount": "Inicia sesión en tu cuenta",

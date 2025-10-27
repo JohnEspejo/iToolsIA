@@ -48,15 +48,20 @@ export async function POST(req: NextRequest) {
       console.log('Could not update conversation title:', error);
     }
 
-    // Determine the N8N webhook URL based on the selected AI model
-    let n8nUrl = '';
+    // Determine the backend URL based on the selected AI model
+    let backendUrl = '';
+    let isPythonRag = false;
     
-    if (aiModel === 'gemini') {
+    if (aiModel === 'python') {
+      // Use the Python RAG service
+      backendUrl = `${req.nextUrl.origin}/api/chat/python-rag`;
+      isPythonRag = true;
+    } else if (aiModel === 'gemini') {
       // Use the new production Gemini webhook URL
-      n8nUrl = 'https://sswebhookss.joaobr.site/webhook/fd3da80e-250d-4887-b822-0c3f0b149934';
+      backendUrl = 'https://sswebhookss.joaobr.site/webhook/fd3da80e-250d-4887-b822-0c3f0b149934';
     } else if (aiModel === 'openai') {
       // Use the new production OpenAI webhook URL
-      n8nUrl = 'https://sswebhookss.joaobr.site/webhook/a9ac359b-ae8a-4611-96b8-eb302ce6b0ca';
+      backendUrl = 'https://sswebhookss.joaobr.site/webhook/a9ac359b-ae8a-4611-96b8-eb302ce6b0ca';
     } else {
       // Use the default webhook URL from environment variables
       const n8nBaseUrl = process.env.N8N_BASE_URL;
@@ -64,16 +69,16 @@ export async function POST(req: NextRequest) {
       
       if (!n8nBaseUrl || !n8nWebhookPath) {
         return NextResponse.json(
-          { error: 'N8N backend configuration is missing' },
+          { error: 'Backend configuration is missing' },
           { status: 500 }
         );
       }
       
-      n8nUrl = `${n8nBaseUrl}${n8nWebhookPath}`;
+      backendUrl = `${n8nBaseUrl}${n8nWebhookPath}`;
     }
     
     // Log the URL we're trying to call
-    console.log(`Calling N8N webhook for ${aiModel || 'default'} at:`, n8nUrl);
+    console.log(`Calling backend for ${aiModel || 'default'} at:`, backendUrl);
 
     // Create a text encoder to convert strings to Uint8Array
     const encoder = new TextEncoder();
@@ -84,41 +89,106 @@ export async function POST(req: NextRequest) {
 
     const sendStreamingResponse = async () => {
       try {
-        // Send request to N8N backend
-        const response = await fetch(n8nUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message,
-            conversationId,
-            settings,
-            aiModel
-          }),
-        });
+        let response;
+        
+        if (isPythonRag) {
+          // Send request to Python RAG service
+          response = await fetch(backendUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message,
+              conversationId,
+              settings,
+              aiModel,
+              action: 'ask_chatbot',
+              chatbotId: settings?.chatbotId || null
+            }),
+          });
+        } else {
+          // Send request to N8N backend
+          response = await fetch(backendUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message,
+              conversationId,
+              settings,
+              aiModel
+            }),
+          });
+        }
 
-        console.log('N8N response status:', response.status);
-        console.log('N8N response headers:', [...response.headers.entries()]);
+        console.log('Backend response status:', response.status);
+        console.log('Backend response headers:', [...response.headers.entries()]);
         
         if (!response.ok) {
           // Try to get the error response body
           let errorBody = '';
           try {
             errorBody = await response.text();
-            console.log('N8N error response body:', errorBody);
+            console.log('Backend error response body:', errorBody);
           } catch (e) {
             console.log('Could not read error response body:', e);
           }
           
-          throw new Error(`N8N backend responded with status: ${response.status}, body: ${errorBody}`);
+          throw new Error(`Backend responded with status: ${response.status}, body: ${errorBody}`);
         }
 
         // Check if the response is a stream or a regular JSON response
         const contentType = response.headers.get('content-type');
-        console.log('N8N response content-type:', contentType);
+        console.log('Backend response content-type:', contentType);
         
-        if (contentType && contentType.includes('text/event-stream')) {
+        if (isPythonRag) {
+          // Handle regular JSON response from Python RAG
+          const data = await response.json();
+          console.log('Python RAG response data:', data);
+          
+          // Stream the response from Python RAG
+          const messageContent = data.message || '';
+          if (messageContent) {
+            // Split by spaces but preserve line breaks
+            const words = messageContent.split(/(\s+)/).filter((word: string) => word !== '');
+            
+            let accumulatedContent = '';
+            for (let i = 0; i < words.length; i++) {
+              const word = words[i];
+              accumulatedContent += word;
+              
+              const messageEvent = {
+                type: 'message',
+                data: {
+                  content: accumulatedContent,
+                },
+              };
+              
+              await writer.write(
+                encoder.encode(`data: ${JSON.stringify(messageEvent)}\n\n`)
+              );
+              
+              // Add a small delay between chunks for streaming effect
+              await new Promise((resolve) => setTimeout(resolve, 20));
+            }
+          }
+          
+          // Include sources if provided by Python RAG
+          if (data.sources && data.sources.length > 0) {
+            const sourcesEvent = {
+              type: 'sources',
+              data: {
+                sources: data.sources,
+              },
+            };
+            
+            await writer.write(
+              encoder.encode(`data: ${JSON.stringify(sourcesEvent)}\n\n`)
+            );
+          }
+        } else if (contentType && contentType.includes('text/event-stream')) {
           // Handle streaming response from n8n
           const reader = response.body?.getReader();
           
@@ -190,7 +260,7 @@ export async function POST(req: NextRequest) {
           encoder.encode(`data: ${JSON.stringify(completeEvent)}\n\n`)
         );
       } catch (error: any) {
-        console.error('Error calling N8N backend:', error);
+        console.error('Error calling backend:', error);
         
         // Send error message to client
         const errorEvent = {

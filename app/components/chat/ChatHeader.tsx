@@ -47,6 +47,19 @@ export default function ChatHeader({ toggleSidebar, isSidebarOpen }: ChatHeaderP
     };
   }, [setOpenDropdown]);
 
+  const getModelDisplayName = (model: string) => {
+    switch (model) {
+      case 'openai':
+        return 'OpenAI';
+      case 'gemini':
+        return 'Gemini';
+      case 'python':
+        return 'Python RAG';
+      default:
+        return model;
+    }
+  };
+
   const handleModelChange = (model: string) => {
     setSelectedModel(model);
     // Save to localStorage
@@ -60,6 +73,23 @@ export default function ChatHeader({ toggleSidebar, isSidebarOpen }: ChatHeaderP
       }
     }
     localStorage.setItem('chatSettings', JSON.stringify(settings));
+    
+    // Dispatch custom event to notify other components of model change
+    window.dispatchEvent(new CustomEvent('modelChange'));
+    
+    // Show single notification about model change
+    const modelName = getModelDisplayName(model);
+    const showToast = (window as any).showToast || (window as any).appToast;
+    if (typeof showToast === 'function') {
+      // Show single notification
+      setTimeout(() => {
+        showToast(`Cambiaste al agente ${modelName}`, 'success');
+      }, 100);
+    } else {
+      // Fallback to alert if toast system isn't available
+      alert(`Has seleccionado el modelo: ${modelName}`);
+    }
+    
     setOpenDropdown(null);
   };
 

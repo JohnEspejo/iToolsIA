@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import UserMenu from '../UserMenu';
 
@@ -25,6 +25,7 @@ export default function ConversationSidebar({
   const t = useTranslations('chat');
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
 
   const handleNewConversation = async () => {
     try {
@@ -60,6 +61,57 @@ export default function ConversationSidebar({
       const locale = window.location.pathname.split('/')[1];
       router.push(`/${locale}/chat/${newId}`);
     }
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Show success notification
+        const showToast = (window as any).showToast || (window as any).appToast;
+        if (typeof showToast === 'function') {
+          showToast('Conversación eliminada correctamente', 'success');
+        }
+        
+        // If we're deleting the active conversation, navigate to the main chat page
+        if (conversationId === activeConversationId) {
+          const locale = window.location.pathname.split('/')[1];
+          router.push(`/${locale}/chat`);
+        }
+        
+        // Refresh the conversations list
+        if (onRefresh) {
+          await onRefresh();
+        }
+      } else {
+        console.error('Failed to delete conversation');
+        // Show error notification
+        const showToast = (window as any).showToast || (window as any).appToast;
+        if (typeof showToast === 'function') {
+          showToast('Error al eliminar la conversación', 'warning');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      // Show error notification
+      const showToast = (window as any).showToast || (window as any).appToast;
+      if (typeof showToast === 'function') {
+        showToast('Error al eliminar la conversación', 'warning');
+      }
+    } finally {
+      setConversationToDelete(null);
+    }
+  };
+
+  const confirmDelete = (conversationId: string) => {
+    setConversationToDelete(conversationId);
+  };
+
+  const cancelDelete = () => {
+    setConversationToDelete(null);
   };
 
   if (!isOpen) return null;
@@ -116,31 +168,64 @@ export default function ConversationSidebar({
           <ul className="space-y-1">
             {conversations.map((conversation, index) => (
               <li key={conversation.id} className="animate-fadeIn" style={{ animationDelay: `${index * 50}ms` }}>
-                <button
-                  onClick={() => {
-                    const locale = window.location.pathname.split('/')[1];
-                    router.push(`/${locale}/chat/${conversation.id}`);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-200 group relative overflow-hidden ${
-                    conversation.id === activeConversationId 
-                      ? 'bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 text-purple-700 dark:text-purple-300 shadow-lg shadow-purple-500/10 border border-purple-200/50 dark:border-purple-700/50' 
-                      : 'hover:bg-purple-50/80 dark:hover:bg-gray-700/50 text-gray-700 dark:text-purple-300 hover:shadow-md hover:shadow-black/5'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-                      conversation.id === activeConversationId
-                        ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
-                        : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-400 dark:group-hover:bg-gray-500'
-                    }`}></div>
-                    <span className="truncate font-medium">
-                      {conversation.title || 'Untitled conversation'}
-                    </span>
+                {/* Delete confirmation dialog */}
+                {conversationToDelete === conversation.id ? (
+                  <div className="w-full bg-gradient-to-r from-purple-600 to-violet-600 rounded-lg p-3 mb-2">
+                    <p className="text-white text-xs font-medium mb-2">¿Deseas eliminar esta conversación?</p>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleDeleteConversation(conversation.id)}
+                        className="flex-1 py-1 bg-white/20 hover:bg-white/30 text-white text-xs rounded transition-colors"
+                      >
+                        Sí
+                      </button>
+                      <button
+                        onClick={cancelDelete}
+                        className="flex-1 py-1 bg-white/20 hover:bg-white/30 text-white text-xs rounded transition-colors"
+                      >
+                        No
+                      </button>
+                    </div>
                   </div>
-                  {conversation.id === activeConversationId && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-violet-500/5 rounded-lg"></div>
-                  )}
-                </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      const locale = window.location.pathname.split('/')[1];
+                      router.push(`/${locale}/chat/${conversation.id}`);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-200 group relative overflow-hidden ${
+                      conversation.id === activeConversationId 
+                        ? 'bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 text-purple-700 dark:text-purple-300 shadow-lg shadow-purple-500/10 border border-purple-200/50 dark:border-purple-700/50' 
+                        : 'hover:bg-purple-50/80 dark:hover:bg-gray-700/50 text-gray-700 dark:text-purple-300 hover:shadow-md hover:shadow-black/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                          conversation.id === activeConversationId
+                            ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
+                            : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-400 dark:group-hover:bg-gray-500'
+                        }`}></div>
+                        <span className="truncate font-medium">
+                          {conversation.title || 'Untitled conversation'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirmDelete(conversation.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-purple-200/50 dark:hover:bg-gray-600/50 transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                        aria-label="Eliminar conversación"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    {conversation.id === activeConversationId && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-violet-500/5 rounded-lg"></div>
+                    )}
+                  </button>
+                )}
               </li>
             ))}
           </ul>

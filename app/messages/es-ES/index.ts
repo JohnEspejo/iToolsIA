@@ -26,7 +26,8 @@ export default {
       "language": "Idioma",
       "theme": "Tema",
       "save": "Guardar",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "aiModel": "Modelo de IA"
     }
   },
   "common": {
@@ -64,18 +65,5 @@ export default {
     "googleSignInError": "Error al iniciar sesión con Google",
     "passwordsDoNotMatch": "Las contraseñas no coinciden",
     "registrationError": "Error al registrar el usuario"
-  },
-  "settings": {
-    "title": "Configuración",
-    "ragSettings": "Configuración de RAG",
-    "topK": "Número de fuentes (Top-K)",
-    "temperature": "Creatividad",
-    "language": "Idioma",
-    "theme": "Tema",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "precise": "Preciso",
-    "creative": "Creativo",
-    "aiModel": "Modelo de IA"
   }
 }

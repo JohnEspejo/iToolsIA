@@ -1,36 +1,50 @@
-# n8n Integration Setup
-This document explains how to properly set up the n8n integration for file uploads in the chat application.
+# Integration with n8n and Python RAG Service
 
-## File Upload Integration
-When a user uploads a file through the chat interface, the system automatically activates the n8n "Upload your file" node using the form endpoint:
+This document explains how the chat application integrates with both n8n workflows and the Python RAG service.
 
-```
-https://sswebhookss.joaobr.site/form/7aa22c3a-8f03-4201-812b-ceb2d8525472
-```
+## n8n Integration
 
-1. User selects a file to upload through the chat interface
-2. File is uploaded to the Next.js backend via `/api/chat/upload`
-3. Backend automatically sends the file to the n8n form endpoint
-4. n8n workflow processes the file as configured
+The application connects to n8n webhooks for standard AI model interactions (OpenAI, Gemini).
 
-The current n8n webhook uses the **production endpoint**, which means:
+### Configuration
 
-- The endpoint is always available
-- No manual activation is required
-- Files will be processed immediately upon upload
+The n8n integration is configured through environment variables:
+- `N8N_BASE_URL`: The base URL of your n8n instance
+- `N8N_WEBHOOK_PATH`: The webhook path for the default AI model
 
-## Deployment
+### Webhook URLs
 
-For production use, make sure to:
+- **Default Model**: Uses the webhook configured in `N8N_BASE_URL` + `N8N_WEBHOOK_PATH`
+- **OpenAI Model**: https://sswebhookss.joaobr.site/webhook/a9ac359b-ae8a-4611-96b8-eb302ce6b0ca
+- **Gemini Model**: https://sswebhookss.joaobr.site/webhook/fd3da80e-250d-4887-b822-0c3f0b149934
 
-1. Deploy your n8n workflow (not just test mode)
-2. Update the endpoint URL if needed
-3. Configure proper authentication if required
+## Python RAG Service Integration
 
-## Supported File Types
+The Python RAG service provides document-based question answering capabilities.
 
-The system supports uploading:
-- PDF documents (.pdf)
-- Word documents (.doc, .docx)
+### How it Works
 
-Other file types will be rejected by the upload endpoint.
+1. Users upload PDF documents through the chat interface
+2. The documents are processed by the Python RAG service to create embeddings
+3. Users can then ask questions about the uploaded documents
+4. The service retrieves relevant document sections and uses them to generate answers
+
+### API Routes
+
+The Python RAG service is accessed through the `/api/chat/python-rag` route in the Next.js application:
+
+- **POST /api/chat/python-rag**: Send questions to the Python RAG service
+- **PUT /api/chat/python-rag**: Upload documents to create new chatbots
+
+### Environment Variables
+
+- `PYTHON_RAG_BASE_URL`: The base URL of the Python RAG service (default: http://localhost:5001)
+
+## Selecting AI Models
+
+Users can select different AI models through the chat interface:
+- **OpenAI**: Standard OpenAI GPT models
+- **Gemini**: Google's Gemini models
+- **Python RAG**: Document-based question answering using the Python RAG service
+
+The selection is sent as the `aiModel` parameter in the chat requests.

@@ -4,20 +4,21 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 
+interface Settings {
+  aiModel: string;
+}
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface Settings {
-  aiModel: string;
-}
-
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const t = useTranslations('settings');
+  const t = useTranslations('chat.settings');
   const [settings, setSettings] = useState<Settings>({
     aiModel: 'openai',
   });
+  const [previousModel, setPreviousModel] = useState<string>('');
 
   useEffect(() => {
     // Load settings from localStorage when component mounts
@@ -28,15 +29,51 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setSettings({
           aiModel: parsedSettings.aiModel || 'openai',
         });
+        setPreviousModel(parsedSettings.aiModel || 'openai');
       } catch (e) {
         console.error('Failed to parse saved settings:', e);
       }
     }
   }, []);
 
+  const getModelDisplayName = (model: string) => {
+    switch (model) {
+      case 'openai':
+        return 'OpenAI';
+      case 'gemini':
+        return 'Gemini';
+      case 'python':
+        return 'Python RAG';
+      default:
+        return model;
+    }
+  };
+
   const handleSave = () => {
     // Save settings to localStorage
     localStorage.setItem('chatSettings', JSON.stringify(settings));
+    
+    // Show notification if model changed
+    if (settings.aiModel !== previousModel) {
+      const modelName = getModelDisplayName(settings.aiModel);
+      
+      // Dispatch custom event to notify other components of model change
+      window.dispatchEvent(new CustomEvent('modelChange'));
+      
+      // Try multiple approaches to show notification
+      const showToast = (window as any).showToast || (window as any).appToast;
+      if (typeof showToast === 'function') {
+        // Show single notification
+        setTimeout(() => {
+          showToast(`Cambiaste al agente ${modelName}`, 'success');
+        }, 100);
+      } else {
+        // Fallback to alert if toast system isn't available
+        alert(`Has seleccionado el modelo: ${modelName}`);
+      }
+      setPreviousModel(settings.aiModel);
+    }
+    
     onClose();
   };
 

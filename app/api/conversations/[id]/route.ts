@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { join } from 'path';
+import { readFile } from 'fs/promises';
 import { conversationStore, saveConversations } from '../route';
 
 // GET /api/conversations/[id] - Get a specific conversation
@@ -70,7 +72,20 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const conversationIndex = conversationStore.data.findIndex((c) => c.id === params.id);
+    // Reload conversations from file to ensure we have the latest data
+    const filePath = join(process.cwd(), 'conversations.json');
+    let conversations: any[] = [];
+    
+    try {
+      const fileData = await readFile(filePath, 'utf8');
+      conversations = JSON.parse(fileData);
+    } catch (error) {
+      console.error('Error reading conversations file:', error);
+      // If we can't read the file, use the in-memory store
+      conversations = conversationStore.data;
+    }
+    
+    const conversationIndex = conversations.findIndex((c) => c.id === params.id);
     
     if (conversationIndex === -1) {
       return NextResponse.json(
@@ -79,10 +94,13 @@ export async function DELETE(
       );
     }
     
-    conversationStore.data.splice(conversationIndex, 1);
+    conversations.splice(conversationIndex, 1);
+    
+    // Update both in-memory store and file
+    conversationStore.data = conversations;
     
     // Save to file
-    await saveConversations(conversationStore.data);
+    await saveConversations(conversations);
     
     // Note: In a real app, this would be handled by the database
     // For now, we'll just return success
