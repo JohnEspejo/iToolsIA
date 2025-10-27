@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your_nextauth_secret_here
+      - GOOGLE_CLIENT_ID=your_google_client_id
+      - GOOGLE_CLIENT_SECRET=your_google_client_secret
+      - DATABASE_URL=postgresql://postgres:password@database:5432/chat_app
+      - PYTHON_RAG_BASE_URL=http://backend:5001
+      - N8N_BASE_URL=https://sswebhookss.joaobr.site
+      - N8N_WEBHOOK_PATH=/webhook/fd3da80e-250d-4887-b822-0c3f0b149934
+    depends_on:
+      - database
+    volumes:
+      - ./uploads:/app/uploads
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "5001:5001"
+    environment:
+      - OPEN_AI_API_KEY=your_openai_api_key_here
+    volumes:
+      - ./backend/pdf_files:/app/pdf_files
+
+  database:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: chat_app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

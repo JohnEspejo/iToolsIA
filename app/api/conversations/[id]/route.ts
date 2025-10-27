@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
-import { conversationStore, saveConversations } from '../route';
+import { conversationStore, saveConversations } from '@/lib/conversations';
 
 // GET /api/conversations/[id] - Get a specific conversation
 export async function GET(

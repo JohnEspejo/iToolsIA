@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationStore, addMessageToConversation } from '../../route';
+import { conversationStore, addMessageToConversation } from '@/lib/conversations';
 
 // Define the Message type
 interface Message {

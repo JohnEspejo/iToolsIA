@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationStore, updateConversationTitle } from '../../route';
+import { conversationStore, updateConversationTitle } from '@/lib/conversations';
 
 // POST /api/conversations/[id]/update-title - Update conversation title based on message
 export async function POST(

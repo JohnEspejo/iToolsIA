@@ -53,7 +53,11 @@ model Message {
   @@map("messages")
 }
 
-enum MessageRole { USER ASSISTANT SYSTEM }
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
 
 model Session {
   id           String   @id @default(cuid())
