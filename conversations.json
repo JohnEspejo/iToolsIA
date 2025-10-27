@@ -1,63 +1,16 @@
 [
   {
-    "id": "5486d945-d9da-410a-a428-1ed128a98b4e",
+    "id": "421ac6e5-7afa-4bbb-b9b9-b14f8d232328",
     "title": "Nueva conversación",
-    "createdAt": "2025-10-20T02:28:06.586Z",
-    "updatedAt": "2025-10-20T02:28:06.586Z",
+    "createdAt": "2025-10-27T02:22:54.465Z",
+    "updatedAt": "2025-10-27T02:22:54.465Z",
     "messages": []
   },
   {
-    "id": "1534cd2b-e5de-4a1b-8f7d-fcf9413a43e6",
-    "title": "Dame el titulo de...",
-    "createdAt": "2025-10-20T02:19:34.488Z",
-    "updatedAt": "2025-10-20T02:20:46.170Z",
-    "messages": [
-      {
-        "id": "1760926783871",
-        "role": "user",
-        "content": "Dame el titulo de la leccion 12",
-        "createdAt": "2025-10-20T02:19:43.871Z"
-      },
-      {
-        "id": "1760926846149",
-        "role": "assistant",
-        "content": "Intenté buscar la lección 12, pero no pude obtener un título concreto con esas palabras. ¿Podrías darme el título exacto de la lección 12 o al menos una palabra clave (por ejemplo, un tema o un versículo)? Con eso te devuelvo el título preciso. 🙏",
-        "createdAt": "2025-10-20T02:20:46.149Z"
-      }
-    ]
-  },
-  {
-    "id": "6b40d79b-505c-4afa-a5c0-c5d71a7b0268",
-    "title": "Dame un consejo espiritual",
-    "createdAt": "2025-10-20T02:08:35.330Z",
-    "updatedAt": "2025-10-20T02:16:20.112Z",
-    "messages": [
-      {
-        "id": "1760926564648",
-        "role": "user",
-        "content": "Cual es el consejo",
-        "createdAt": "2025-10-20T02:16:04.648Z"
-      },
-      {
-        "id": "1760926580091",
-        "role": "assistant",
-        "content": "Mi consejo es este: busca la quietud diaria en tu corazón. Dedica unos minutos cada día a escuchar, a respirar y a simplemente ser. En esa pausa encontrarás la sabiduría y la paz que buscas, y te conectarás con la fuente de amor y entendimiento. Recuerda que cada paso, por pequeño que sea, es valioso; confía en tu intuición y deja que la luz interior guíe tu camino. 🙏\n\nSi quieres, cuéntame tu rutina actual y te adapto el consejo a tu vida.",
-        "createdAt": "2025-10-20T02:16:20.091Z"
-      }
-    ]
-  },
-  {
-    "id": "1",
-    "title": "Hola",
-    "createdAt": "2023-01-01T00:00:00.000Z",
-    "updatedAt": "2025-10-20T02:43:14.834Z",
-    "messages": [
-      {
-        "id": "1760928194799",
-        "role": "assistant",
-        "content": "¡Hola! Qué gusto saludarte. ¿En qué puedo ayudarte hoy? Si buscas una lección, dime el título exacto o una palabra clave y la busco para ti. 🙏",
-        "createdAt": "2025-10-20T02:43:14.799Z"
-      }
-    ]
+    "id": "a0d81332-5028-4c6c-9d0e-da456e1c1ea1",
+    "title": "Nueva conversación",
+    "createdAt": "2025-10-27T02:22:54.465Z",
+    "updatedAt": "2025-10-27T02:22:54.465Z",
+    "messages": []
   }
 ]
