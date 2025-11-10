@@ -1,16 +1,22 @@
 [
   {
-    "id": "jqp33s",
-    "title": "Nueva conversación",
-    "createdAt": "2025-10-27T05:02:04.685Z",
-    "updatedAt": "2025-10-27T05:02:04.685Z",
-    "messages": []
-  },
-  {
-    "id": "5b9it",
-    "title": "Nueva conversación",
-    "createdAt": "2025-10-27T05:02:04.684Z",
-    "updatedAt": "2025-10-27T05:02:04.684Z",
-    "messages": []
+    "id": "2j6ho",
+    "title": "Buenos dias",
+    "createdAt": "2025-11-10T19:21:24.256Z",
+    "updatedAt": "2025-11-10T19:21:52.246Z",
+    "messages": [
+      {
+        "id": "temp-1",
+        "role": "user",
+        "content": "Buenos dias",
+        "createdAt": "2025-11-10T19:21:37.770Z"
+      },
+      {
+        "id": "temp-2",
+        "role": "assistant",
+        "content": "¡Buenos días! Que este nuevo día te llene de paz y claridad. ¿Cómo puedo acompañarte hoy?\n\nOpciones:\n- Buscar una lección o estudio (dime título o palabra clave).\n- Compartir un consejo o reflexión espiritual.\n- Simplemente conversar o responder una pregunta.\n\n¿Qué te gustaría hacer?",
+        "createdAt": "2025-11-10T19:21:52.206Z"
+      }
+    ]
   }
 ]
